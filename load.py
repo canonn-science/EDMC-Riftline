@@ -4,9 +4,7 @@ A Skeleton EDMC Plugin
 import locale
 import sys
 
-#import numpy as np 
-from numpy import array
-from numpy import dot
+import numpy as np 
 
 import Tkinter
 
@@ -14,9 +12,9 @@ this = sys.modules[__name__]
 locale.setlocale(locale.LC_ALL, '')
 
 def getDistance(x,y,z):
-	p = array([68.84375 , 48.75 , 69.75])
-	q = array([75.75 , 48.75 , 75.15625 ])
-	r = array([x, y, z])
+	p = np.array([68.84375 , 48.75 , 69.75])
+	q = np.array([75.75 , 48.75 , 75.15625 ])
+	r = np.array([x, y, z])
 
 	def t(p, q, r):
 		x = p-q

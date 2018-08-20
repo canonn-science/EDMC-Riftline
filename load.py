@@ -4,26 +4,40 @@ A Skeleton EDMC Plugin
 import locale
 import sys
 
-import numpy as np 
 
 import Tkinter
 
 this = sys.modules[__name__]
 locale.setlocale(locale.LC_ALL, '')
 
+def dot(a, b):
+	return sum([a[i]*b[i] for i in range(3)])
+
+def norm(a):
+	return sum([a[i]**2 for i in range(3)])**0.5
+
 def getDistance(x,y,z):
-	p = np.array([68.84375 , 48.75 , 69.75])
-	q = np.array([75.75 , 48.75 , 75.15625 ])
-	r = np.array([x, y, z])
-
+	#The Rift Line is a line that passes through Riedquat and Reorte
+	#So hard coding the coords here
+	p = (68.84375, 48.75, 69.75)
+	q = (75.75, 48.75, 75.15625)
+	r = (x, y, z)
+    
 	def t(p, q, r):
-		x = p-q
-		return np.dot(r-q, x)/np.dot(x, x)
-
+		a = tuple([r[i]-q[i] for i in range(3)])
+		b = tuple([p[i]-q[i] for i in range(3)])
+		return dot(a, b)/dot(b, b)
+    
 	def d(p, q, r):
-		return np.linalg.norm(t(p, q, r)*(p-q)+q-r)
+		k = t(p, q, r)
+		a = tuple([k*(p[i]-q[i]) for i in range(3)])
+		b = tuple([a[i]+q[i] for i in range(3)])
+		c = tuple([b[i]-r[i] for i in range(3)])
+		return norm(c)
+    
+	return d(p, q, r)
 
-	print(d(p, q, r))
+
 
 
 def plugin_start():
@@ -49,6 +63,6 @@ def plugin_app(parent):
 def journal_entry(cmdr, system, station, entry):
     
     if entry['event'] == 'FSDJump':
-		jd=getDistance(entry["StarPos"][0],entry["StarPos"][1],entry["StarPos"][2])
-		this.status=str(jd)
+		jd=getDistance(float(entry["StarPos"][0]),float(entry["StarPos"][1]),float(entry["StarPos"][2]))
+		this.status["text"]=str(round(jd,1))+"ly"
 

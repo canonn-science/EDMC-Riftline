@@ -4,8 +4,11 @@ A Skeleton EDMC Plugin
 import locale
 import sys
 import math
+import threading
+import requests
 
 import Tkinter
+from urllib import quote_plus
 
 this = sys.modules[__name__]
 locale.setlocale(locale.LC_ALL, '')
@@ -14,7 +17,21 @@ RIEDQUAT=(68.84375, 48.75, 69.75)
 REORTE=(75.75, 48.75, 75.15625)
 
 
+class Cmdr(threading.Thread):
+	def __init__(self, system):
+		threading.Thread.__init__(self)
+		self.system = system
 
+	def run(self):
+		try:
+			url="https://www.edsm.net/api-v1/system?showCoordinates=1&systemName="+quote_plus(self.system)
+			r=requests.get(url)
+			s =  r.json()
+			displayRift(float(s["coords"]["x"]),float(s["coords"]["y"]),float(s["coords"]["z"]))
+			print s
+			#debug(self.payload,2)
+		except:
+			print("[RiftLine] Issue posting message " + str(sys.exc_info()[0]))
 
 def dot(a, b):
 	return sum([a[i]*b[i] for i in range(3)])
@@ -71,18 +88,22 @@ def plugin_app(parent):
     :return:
     """
     label = Tkinter.Label(parent, text="Riftline:")
-    this.status = Tkinter.Label(parent, anchor=Tkinter.W, text="Waiting for Jump")
+    this.status = Tkinter.Label(parent, anchor=Tkinter.W, text="Waiting for location")
     this.total_bounty = 0
     return label, this.status
 
+def displayRift(x,y,z):
+	jd=getDistance(x,y,z)
+	nc=getNearest(x,y,z) 
+	print nc
+	this.status["text"]=str(round(jd,1))+"ly "
 
-def journal_entry(cmdr, system, station, entry):
+def journal_entry(cmdr, is_beta, system, station, entry, state):
     
 	if entry['event'] in ['StartUp', 'Location', 'FSDJump']:
-		jd=getDistance(float(entry["StarPos"][0]),float(entry["StarPos"][1]),float(entry["StarPos"][2]))
-		nc=getNearest(float(entry["StarPos"][0]),float(entry["StarPos"][1]),float(entry["StarPos"][2])) 
-		
-		print nc
-	
-		this.status["text"]=str(round(jd,1))+"ly "
+		print "Riftline"
+		print state
+		displayRift(float(entry["StarPos"][0]),float(entry["StarPos"][1]),float(entry["StarPos"][2]))
 
+def cmdr_data(data):
+	Cmdr(data["lastSystem"]["name"]).start()

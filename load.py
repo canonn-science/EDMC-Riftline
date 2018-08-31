@@ -6,6 +6,7 @@ import sys
 import math
 import threading
 import requests
+import json
 
 import Tkinter
 from urllib import quote_plus
@@ -24,7 +25,9 @@ class CmdrData(threading.Thread):
 
 	def run(self):
 		#try:
+			
 			url="https://www.edsm.net/api-v1/system?showCoordinates=1&systemName="+quote_plus(self.system)
+			
 			r=requests.get(url)
 			s =  r.json()
 			print s
@@ -33,6 +36,27 @@ class CmdrData(threading.Thread):
 		#except:
 		#	print("[RiftLine] Issue posting message " + str(sys.exc_info()[0]))
 
+class SphereSystems(threading.Thread):
+	def __init__(self, system):
+		threading.Thread.__init__(self)
+		self.system = system
+
+	def run(self):
+		#try:
+			x,y,z=self.system
+			url="https://www.edsm.net/api-v1/sphere-systems?showCoordinates=1&minRadius=0&radius=20&x={}&y={}&z={}"
+			r=requests.get(url.format(x,y,z))
+			s =  r.json()
+			print json.dumps(s, indent=4, sort_keys=True)
+			
+			# after grabbing the list of sites we need to rotate and translate them
+			# then find the closest site to the nc with a positive x and negative x
+			# if they can be found then put them on the map.
+						
+			#debug(self.payload,2)
+		#except:
+		#	print("[RiftLine] Issue posting message " + str(sys.exc_info()[0]))		
+		
 def dot(a, b):
 	return sum([a[i]*b[i] for i in range(3)])
 
@@ -102,23 +126,39 @@ def plugin_app(parent):
     this.pcont=Tkinter.Frame(parent)
     this.container=Tkinter.Frame(this.pcont)
     this.container.columnconfigure(3, weight=1)
-    
-    #label = Tkinter.Label(this.container, text="Riftline:")
-    #this.status = Tkinter.Label(this.container, anchor=Tkinter.W, text="Waiting for location")
-    
-    #this.ship = Tkinter.Label(this.container, anchor=Tkinter.W, text="Waiting for location")	
-
-    this.RADAR = Tkinter.PhotoImage(file = this.plugin_dir+'\\radar.gif')
-    #this.SHIP = Tkinter.PhotoImage(file = this.plugin_dir+'\\ship.gif')
+    imagepath=this.plugin_dir+'\\images\\{}'
+      
+    this.RADAR_PANEL = Tkinter.PhotoImage(file = imagepath.format("circle_panel.gif"))
+    this.RADAR_SCREEN = Tkinter.PhotoImage(file = imagepath.format("radar_panel.gif"))
+    this.TEXT_LOGO = Tkinter.PhotoImage(file = imagepath.format("text_panel_logo.gif"))
+    this.TEXT_PANEL = Tkinter.PhotoImage(file = imagepath.format("text_panel.gif"))
+    this.SHIP = Tkinter.PhotoImage(file = imagepath.format("ship.gif"))
+	
+    #this.radar_frame=Tkinter.Canvas(this.container)
+	
     #this.ship = Tkinter.Label(this.container, anchor=Tkinter.W, text="Waiting for location",image=this.SHIP)		
     #this.ship.place(x=0, y=0, relwidth=1, relheight=1)	
-    this.status = Tkinter.Label(this.container, anchor=Tkinter.W, text="Waiting for location", image=this.RADAR)
-    this.status.grid(row=0,column=0, sticky=Tkinter.W)
+    this.radar_screen = Tkinter.Label(this.container, anchor=Tkinter.W, text="Waiting for location", image=this.RADAR_SCREEN)
+    this.radar_screen.grid(row=0,column=0, sticky=Tkinter.W)
+	
+	
+	
+    this.text_panel = Tkinter.Label(this.container, anchor=Tkinter.W, text="Waiting for location", image=this.TEXT_LOGO)
+    this.text_panel.grid(row=0,column=1, sticky=Tkinter.W)
+   
+    this.status = Tkinter.Label(this.container, anchor=Tkinter.W, text="Waiting for location")
+    this.status.place(x=180, y=20)		
+   
+    #this.radar_panel = Tkinter.Label(this.radar_frame, anchor=Tkinter.W, text="Waiting for location", image=this.RADAR_PANEL)
+    #this.radar_panel.pack()
+    
+    #this.status.place(x=0, y=0,width=155,height=150)		
+    #this.radar_panel.place(x=0, y=0,width=155,height=150)		
     #this.status.place(x=0, y=0, relwidth=199, relheight=199)			
-    this.SHIP = Tkinter.PhotoImage(file = this.plugin_dir+'\\ship.gif')
+    
     this.ship = Tkinter.Label(this.container, anchor=Tkinter.W, text="Waiting for location",image=this.SHIP)		
     rx,ry=getRadialCoords((0,0,0),0)
-    this.ship.place(x=97, y=97)		
+    this.ship.place(x=rx, y=ry)		
     this.container.grid_remove()
     this.container.grid()
     #return label, this.status
@@ -155,21 +195,18 @@ def getRadialCoords(c,d):
 	#get the angle of rotation
 	radians=math.atan2(z,y)
 	#rotate by by distance
+	d = d*0.75
 	(yy,xx) = (d*math.cos(radians),d*math.sin(radians))
 	
+	
 
-	return round(xx+97,0),round(yy+97,0)
-	
-	
-	
-	
-	
-	
+	return round(xx+75,0),round(yy+75,0)
 	
 		
 	
 def displayRift(x,y,z):
 	jd=getRiftDistance(x,y,z)
+	#nc = NearestCoordinates
 	nc=getNearest(x,y,z) 
 	
 	# We are going to translate the origin to nearest point in the line
@@ -197,7 +234,9 @@ def displayRift(x,y,z):
 	rx,ry=getRadialCoords(rotate(cp,xz,xy),getDistance((0,0,0),rotate(cp,xz,xy)))
 	
 	this.ship.place(x=rx, y=ry)		
+	SphereSystems(nc).start()
 	
+	this.text_panel["image"] = this.TEXT_PANEL
 	this.status["text"]=str(round(jd,1))+"ly "
 
 def journal_entry(cmdr, is_beta, system, station, entry, state):

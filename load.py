@@ -44,8 +44,10 @@ class SphereSystems(threading.Thread):
 	def run(self):
 		#try:
 			x,y,z=self.system
-			url="https://www.edsm.net/api-v1/sphere-systems?showCoordinates=1&minRadius=0&radius=20&x={}&y={}&z={}"
-			r=requests.get(url.format(x,y,z))
+			#50,000 cubic light year volume
+			radius=100
+			url="https://www.edsm.net/api-v1/sphere-systems?showCoordinates=1&minRadius=0&radius={}&x={}&y={}&z={}"
+			r=requests.get(url.format(radius,x,y,z))
 			s =  r.json()
 			print json.dumps(s, indent=4, sort_keys=True)
 			
@@ -189,8 +191,8 @@ def getRadialCoords(c,d):
 	
 	x,y,z=c
 	
-	if d > 100:
-		d = 100
+	if d > 88:
+		d = 88
 		
 	#get the angle of rotation
 	radians=math.atan2(z,y)

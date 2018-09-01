@@ -49,7 +49,19 @@ class SphereSystems(threading.Thread):
 			url="https://www.edsm.net/api-v1/sphere-systems?showCoordinates=1&minRadius=0&radius={}&x={}&y={}&z={}"
 			r=requests.get(url.format(radius,x,y,z))
 			s =  r.json()
-			print json.dumps(s, indent=4, sort_keys=True)
+			#density = 
+			print len(s)
+			density=round((4.19*1000000)/len(s),2)
+			print density
+			#print json.dumps(s, indent=4, sort_keys=True)
+			radius=20
+			url="https://www.edsm.net/api-v1/sphere-systems?showCoordinates=1&minRadius=0&radius={}&x={}&y={}&z={}"
+			r=requests.get(url.format(radius,x,y,z))
+			s =  r.json()
+			#density = 
+			print len(s)
+			density=round((44602.24)/len(s),2)
+			print density
 			
 			# after grabbing the list of sites we need to rotate and translate them
 			# then find the closest site to the nc with a positive x and negative x
@@ -204,7 +216,12 @@ def getRadialCoords(c,d):
 
 	return round(xx+75,0),round(yy+75,0)
 	
-		
+def displayDistance(d):
+	if d <= 100:
+		sd=" = " +str(round(jd,1))+ "ly"
+	else:
+		sd=" > 100ly"
+	this.status["text"]="d(Centre)"+sd
 	
 def displayRift(x,y,z):
 	jd=getRiftDistance(x,y,z)
@@ -239,7 +256,7 @@ def displayRift(x,y,z):
 	SphereSystems(nc).start()
 	
 	this.text_panel["image"] = this.TEXT_PANEL
-	this.status["text"]=str(round(jd,1))+"ly "
+	displayDistance(jd)
 
 def journal_entry(cmdr, is_beta, system, station, entry, state):
     

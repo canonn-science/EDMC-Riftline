@@ -84,6 +84,7 @@ class SphereSystems(threading.Thread):
 		denom=DSOL/scale
 		print "Denonimator {}".format(denom)	
 		print "round(({}/{})*100,1)".format(systems,denom)
+		
 		return round((systems/denom)*100,0)
 		
 	def run(self):
@@ -101,11 +102,14 @@ class SphereSystems(threading.Thread):
 			# if they can be found then put them on the map if we wanted but at over 800 systems that would be naughty
 			
 			#get the density and compare
-			d=self.getDensity(self.centre,100,len(systems))
-			print "density: {}%".format(d)
-			d=self.getDensity(self.system,20,local)
-			print "density: {}%".format(d)
+			da=self.getDensity(self.centre,100,len(systems))-100
 			
+			dl=self.getDensity(self.system,20,local)-100
+			
+
+			this.denlocal.grid()
+			this.denlocal["text"] = "Density {}% ({}%)".format(stringFromNumber(dl,0),stringFromNumber(da,0))
+		
 			#this.denlocal.grid()
 			#this.denarea.grid()
 			#debug(self.payload,2)
@@ -211,20 +215,20 @@ def plugin_app(parent):
     this.dsol.grid(row=1,column=0, sticky=Tkinter.W)
     this.zurara=Tkinter.Label(this.infopanel, anchor=Tkinter.W)
     this.zurara.grid(row=2,column=0, sticky=Tkinter.W)
-    this.reidquat=Tkinter.Label(this.infopanel, anchor=Tkinter.W)
-    this.reidquat.grid(row=3,column=0, sticky=Tkinter.W)
+    #this.reidquat=Tkinter.Label(this.infopanel, anchor=Tkinter.W)
+    #this.reidquat.grid(row=3,column=0, sticky=Tkinter.W)
     this.reorte=Tkinter.Label(this.infopanel, anchor=Tkinter.W)
-    this.reorte.grid(row=4,column=0, sticky=Tkinter.W)
+    this.reorte.grid(row=3,column=0, sticky=Tkinter.W)
     this.traffic=Tkinter.Label(this.infopanel, anchor=Tkinter.W)
-    this.traffic.grid(row=5,column=0, sticky=Tkinter.W)
+    this.traffic.grid(row=4,column=0, sticky=Tkinter.W)
     this.denlocal=Tkinter.Label(this.infopanel, anchor=Tkinter.W)	
-    this.denlocal.grid(row=6,column=0, sticky=Tkinter.W)
+    this.denlocal.grid(row=5,column=0, sticky=Tkinter.W)
     this.denarea=Tkinter.Label(this.infopanel, anchor=Tkinter.W)
-    this.denarea.grid(row=7,column=0, sticky=Tkinter.W)
+    this.denarea.grid(row=6,column=0, sticky=Tkinter.W)
 		
     this.dsol.grid_remove()
     this.zurara.grid_remove()
-    this.reidquat.grid_remove()
+    #this.reidquat.grid_remove()
     this.reorte.grid_remove()
     this.denlocal.grid_remove()
     this.denarea.grid_remove()
@@ -285,10 +289,10 @@ def getRadialCoords(c,d):
 	
 def displayDistance(d):
 	if d <= 100:
-		sd=" = " +str(round(jd,1))+ "ly"
+		sd=" = " +str(round(d,1))+ "ly"
 	else:
 		sd=" > 100ly"
-	this.status["text"]="d(Centre)"+sd
+	this.status["text"]="Centre"+sd
 	
 def displayRift(system,x,y,z):
 	jd=getRiftDistance(x,y,z)
@@ -320,13 +324,21 @@ def displayRift(system,x,y,z):
 	rx,ry=getRadialCoords(rotate(cp,xz,xy),getDistance((0,0,0),rotate(cp,xz,xy)))
 	
 	this.dsol.grid()
-	this.dsol["text"]="d(Sol) = {}ly".format(stringFromNumber(round(getDistance(SOL,(x,y,z)),0),0))
+	this.dsol["text"]="Sol = {}ly".format(stringFromNumber(round(getDistance(SOL,(x,y,z)),0),0))
 	this.zurara.grid()
-	this.zurara["text"]="d(Zurara) = {}ly".format(stringFromNumber(round(getDistance(ZURARA,(x,y,z)),0),0))
+	this.zurara["text"]="Zurara = {}ly".format(stringFromNumber(round(getDistance(ZURARA,(x,y,z)),0),0))
 	this.reorte.grid()
-	this.reorte["text"]="d(Reorte) = {}ly".format(stringFromNumber(round(getDistance(REORTE,(x,y,z)),0),0))	
-	this.reidquat.grid()
-	this.reidquat["text"]="d(Riedquat) = {}ly".format(stringFromNumber(round(getDistance(RIEDQUAT,(x,y,z)),0),0))	
+	
+	dr=getDistance(REORTE,(x,y,z))
+	dq=getDistance(RIEDQUAT,(x,y,z))
+	
+	if dr > dq:
+		this.reorte["text"]="Reorte = {}ly".format(stringFromNumber(round(getDistance(REORTE,(x,y,z)),0),0))	
+	else:	
+		this.reorte["text"]="Riedquat = {}ly".format(stringFromNumber(round(getDistance(RIEDQUAT,(x,y,z)),0),0))	
+	
+	#this.reidquat.grid()
+	#this.reidquat["text"]="Riedquat = {}ly".format(stringFromNumber(round(getDistance(RIEDQUAT,(x,y,z)),0),0))	
 	
 	this.ship.place(x=rx, y=ry)		
 	SphereSystems(nc,(x,y,z)).start()

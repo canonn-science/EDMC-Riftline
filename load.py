@@ -319,7 +319,8 @@ def getRadialCoords(c,d):
 	radians=math.atan2(z,y)
 	#rotate by by distance
 	d = d*0.75
-	(yy,xx) = (d*math.cos(radians),d*math.sin(radians))
+	(yy,xx) = (0-(d*math.cos(radians)),0-(d*math.sin(radians)))
+	
 	
 	
 

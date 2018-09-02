@@ -8,9 +8,10 @@ import threading
 import requests
 import json
 import l10n
+from config import config
 from l10n import Locale
-
-import Tkinter
+import myNotebook as nb
+import Tkinter as tk
 from urllib import quote_plus
 
 this = sys.modules[__name__]
@@ -20,6 +21,8 @@ RIEDQUAT=(68.84375, 48.75, 69.75)
 REORTE=(75.75, 48.75, 75.15625)
 SOL=(0,0,0)
 ZURARA=(-9529.4375,-64.5,-7428.4375)
+MEROPE=(-78.59375,-149.625,-340.53125)
+RADAR_CENTER=(75,75)
 
 def stringFromNumber(a,b):
 	return Locale.stringFromNumber(a,b)
@@ -36,7 +39,7 @@ class CmdrData(threading.Thread):
 			
 			r=requests.get(url)
 			s =  r.json()
-			print s
+			#print s
 			displayRift(self.system,float(s["coords"]["x"]),float(s["coords"]["y"]),float(s["coords"]["z"]))
 			#debug(self.payload,2)
 		#except:
@@ -55,7 +58,7 @@ class Traffic(threading.Thread):
 			s =  r.json()
 			this.traffic.grid()
 			this.traffic["text"]="Traffic: {} ships".format(stringFromNumber(s["traffic"]["total"],0))	
-			print s
+			#print s
 			
 		
 class SphereSystems(threading.Thread):
@@ -90,8 +93,10 @@ class SphereSystems(threading.Thread):
 	def run(self):
 		#try:
 		
-			# get a list of systems
-			systems=self.getList(self.centre,100)
+			# get a list of systems only if not Merope
+			if this.merope.get() != "1":
+				systems=self.getList(self.centre,100)
+				
 			
 			# we might not be in range of the centre so need to make an extra call
 			# could optimise this by checking distance.
@@ -101,8 +106,12 @@ class SphereSystems(threading.Thread):
 			# then find the closest site to the nc with a positive x and negative x
 			# if they can be found then put them on the map if we wanted but at over 800 systems that would be naughty
 			
-			#get the density and compare
-			da=self.getDensity(self.centre,100,len(systems))-100
+			#get the density and compare NB Merope has know density
+			if this.merope.get() == "1":
+				#29624 systems in Merope shell
+				da=self.getDensity(MEROPE,200,29624)-100
+			else:
+				da=self.getDensity(self.centre,100,len(systems))-100
 			
 			dl=self.getDensity(self.system,20,local)-100
 			
@@ -121,6 +130,10 @@ def dot(a, b):
 
 
 def getNearest(x,y,z):
+        #if we are doing this for Merope then the nearest point is always Meope
+        if this.merope.get() == "1":
+            return MEROPE
+	
         # gets the coordinates of the nearest point on a line extending through Riedquat and Reorte
         r = RIEDQUAT
         q = REORTE
@@ -172,59 +185,80 @@ def plugin_start(plugin_dir):
 	:return: Plugin name
 	"""
 	this.plugin_dir = plugin_dir
-	return 'EDMC-Riftline'
+	return 'Riftline'
 
 
+def plugin_prefs(parent, cmdr, is_beta):
+	"""
+	Return a TK Frame for adding to the EDMC settings dialog.
+	"""
+	this.merope = tk.StringVar(value=config.get("Merope Shell"))	# Retrieve saved value from config
+	frame = nb.Frame(parent)
+	nb.Checkbutton(frame, text="Use Merope Shell  Instead of Rift", variable=this.merope).grid()
+	print "prefs"
+	return frame	
+
+def prefs_changed(cmdr, is_beta):
+	"""
+	Save settings.
+	"""
+	print "Setting pref {}".format(this.merope.get())
+	config.set("Merope Shell", this.merope.get())	
+
+	
 def plugin_app(parent):
     """
     Return a TK Widget for the EDMC main window.
     :param parent:
     :return:
     """
+	
+    this.merope = tk.StringVar(value=config.get("Merope Shell"))
+	
     this.parent=parent
-    this.pcont=Tkinter.Frame(parent)
-    this.container=Tkinter.Frame(this.pcont)
+    this.pcont=tk.Frame(parent)
+    this.container=tk.Frame(this.pcont)
     this.container.columnconfigure(3, weight=1)
     imagepath=this.plugin_dir+'\\images\\{}'
       
-    this.RADAR_PANEL = Tkinter.PhotoImage(file = imagepath.format("circle_panel.gif"))
-    this.RADAR_SCREEN = Tkinter.PhotoImage(file = imagepath.format("radar_panel.gif"))
-    this.TEXT_LOGO = Tkinter.PhotoImage(file = imagepath.format("text_panel_logo.gif"))
-    this.TEXT_PANEL = Tkinter.PhotoImage(file = imagepath.format("text_panel.gif"))
-    this.SHIP = Tkinter.PhotoImage(file = imagepath.format("ship.gif"))
+    this.RADAR_PANEL = tk.PhotoImage(file = imagepath.format("circle_panel.gif"))
+    this.RADAR_SCREEN = tk.PhotoImage(file = imagepath.format("radar_panel.gif"))
+    this.TEXT_LOGO = tk.PhotoImage(file = imagepath.format("text_panel_logo.gif"))
+    this.TEXT_PANEL = tk.PhotoImage(file = imagepath.format("text_panel.gif"))
+    this.SHIP = tk.PhotoImage(file = imagepath.format("ship.gif"))
 	
-    #this.radar_frame=Tkinter.Canvas(this.container)
+    #this.radar_frame=tk.Canvas(this.container)
 	
-    #this.ship = Tkinter.Label(this.container, anchor=Tkinter.W, text="Waiting for location",image=this.SHIP)		
+    #this.ship = tk.Label(this.container, anchor=tk.W, text="Waiting for location",image=this.SHIP)		
     #this.ship.place(x=0, y=0, relwidth=1, relheight=1)	
-    this.radar_screen = Tkinter.Label(this.container, anchor=Tkinter.W, text="Waiting for location", image=this.RADAR_SCREEN)
-    this.radar_screen.grid(row=0,column=0, sticky=Tkinter.W)
+    this.radar_screen = tk.Label(this.container, anchor=tk.W, text="Waiting for location", image=this.RADAR_SCREEN)
+    this.radar_screen.grid(row=0,column=0, sticky=tk.W)
 	
 	
 	
-    this.text_panel = Tkinter.Label(this.container, anchor=Tkinter.W, text="Waiting for location", image=this.TEXT_LOGO)
-    this.text_panel.grid(row=0,column=1, sticky=Tkinter.W)
+    this.text_panel = tk.Label(this.container, anchor=tk.W, text="Waiting for location", image=this.TEXT_LOGO)
+    this.text_panel.grid(row=0,column=1, sticky=tk.W)
    
-    this.infopanel=Tkinter.Frame(this.container)
+    this.infopanel=tk.Frame(this.container)
     this.infopanel.columnconfigure(1, weight=1)
     this.infopanel.place(x=180, y=15)		
 	
-    this.status = Tkinter.Label(this.infopanel, anchor=Tkinter.W, text="Waiting for location")
-    this.status.grid(row=0,column=0, sticky=Tkinter.W)
-    this.dsol=Tkinter.Label(this.infopanel, anchor=Tkinter.W)
-    this.dsol.grid(row=1,column=0, sticky=Tkinter.W)
-    this.zurara=Tkinter.Label(this.infopanel, anchor=Tkinter.W)
-    this.zurara.grid(row=2,column=0, sticky=Tkinter.W)
-    #this.reidquat=Tkinter.Label(this.infopanel, anchor=Tkinter.W)
-    #this.reidquat.grid(row=3,column=0, sticky=Tkinter.W)
-    this.reorte=Tkinter.Label(this.infopanel, anchor=Tkinter.W)
-    this.reorte.grid(row=3,column=0, sticky=Tkinter.W)
-    this.traffic=Tkinter.Label(this.infopanel, anchor=Tkinter.W)
-    this.traffic.grid(row=4,column=0, sticky=Tkinter.W)
-    this.denlocal=Tkinter.Label(this.infopanel, anchor=Tkinter.W)	
-    this.denlocal.grid(row=5,column=0, sticky=Tkinter.W)
-    this.denarea=Tkinter.Label(this.infopanel, anchor=Tkinter.W)
-    this.denarea.grid(row=6,column=0, sticky=Tkinter.W)
+    this.status = tk.Label(this.infopanel, anchor=tk.W, text="Waiting for location")
+    this.status.grid(row=0,column=0, sticky=tk.W)
+    this.dsol=tk.Label(this.infopanel, anchor=tk.W)
+    this.dsol.grid(row=1,column=0, sticky=tk.W)
+    this.zurara=tk.Label(this.infopanel, anchor=tk.W)
+    this.zurara.grid(row=2,column=0, sticky=tk.W)
+    #this.reidquat=tk.Label(this.infopanel, anchor=tk.W)
+    #this.reidquat.grid(row=3,column=0, sticky=tk.W)
+    this.reorte=tk.Label(this.infopanel, anchor=tk.W)
+    this.reorte.grid(row=3,column=0, sticky=tk.W)
+    this.traffic=tk.Label(this.infopanel, anchor=tk.W)
+    this.traffic.grid(row=4,column=0, sticky=tk.W)
+    this.denlocal=tk.Label(this.infopanel, anchor=tk.W)	
+    this.denlocal.grid(row=5,column=0, sticky=tk.W)
+    this.denarea=tk.Label(this.infopanel, anchor=tk.W)
+    this.denarea.grid(row=6,column=0, sticky=tk.W)
 		
     this.dsol.grid_remove()
     this.zurara.grid_remove()
@@ -234,15 +268,15 @@ def plugin_app(parent):
     this.denarea.grid_remove()
     this.traffic.grid_remove()
    
-    #this.radar_panel = Tkinter.Label(this.radar_frame, anchor=Tkinter.W, text="Waiting for location", image=this.RADAR_PANEL)
+    #this.radar_panel = tk.Label(this.radar_frame, anchor=tk.W, text="Waiting for location", image=this.RADAR_PANEL)
     #this.radar_panel.pack()
     
     #this.status.place(x=0, y=0,width=155,height=150)		
     #this.radar_panel.place(x=0, y=0,width=155,height=150)		
     #this.status.place(x=0, y=0, relwidth=199, relheight=199)			
     
-    this.ship = Tkinter.Label(this.container, anchor=Tkinter.W, text="Waiting for location",image=this.SHIP)		
-    rx,ry=getRadialCoords((0,0,0),0)
+    this.ship = tk.Label(this.container, anchor=tk.W, text="Waiting for location",image=this.SHIP)		
+    rx,ry=RADAR_CENTER
     this.ship.place(x=rx, y=ry)		
     this.container.grid_remove()
     this.container.grid()
@@ -272,6 +306,10 @@ def getRadialCoords(c,d):
 		d = distance from origin
 	"""
 	
+	# rescale for Merope
+	if this.merope.get() == "1":
+		d=d/2.5
+		
 	x,y,z=c
 	
 	if d > 88:
@@ -288,11 +326,17 @@ def getRadialCoords(c,d):
 	return round(xx+75,0),round(yy+75,0)
 	
 def displayDistance(d):
-	if d <= 100:
+	if this.merope.get() == "1":
+		range=200
+		location="Merope"
+	else:
+		range=100
+		location="Centre"
+	if d <= range:
 		sd=" = " +str(round(d,1))+ "ly"
 	else:
-		sd=" > 100ly"
-	this.status["text"]="Centre"+sd
+		sd=" > {}ly".format(range)
+	this.status["text"]="{} {}".format(location,sd)
 	
 def displayRift(system,x,y,z):
 	jd=getRiftDistance(x,y,z)
@@ -325,21 +369,23 @@ def displayRift(system,x,y,z):
 	
 	this.dsol.grid()
 	this.dsol["text"]="Sol = {}ly".format(stringFromNumber(round(getDistance(SOL,(x,y,z)),0),0))
-	this.zurara.grid()
-	this.zurara["text"]="Zurara = {}ly".format(stringFromNumber(round(getDistance(ZURARA,(x,y,z)),0),0))
-	this.reorte.grid()
 	
-	dr=getDistance(REORTE,(x,y,z))
-	dq=getDistance(RIEDQUAT,(x,y,z))
-	
-	if dr > dq:
-		this.reorte["text"]="Reorte = {}ly".format(stringFromNumber(round(getDistance(REORTE,(x,y,z)),0),0))	
-	else:	
-		this.reorte["text"]="Riedquat = {}ly".format(stringFromNumber(round(getDistance(RIEDQUAT,(x,y,z)),0),0))	
-	
-	#this.reidquat.grid()
-	#this.reidquat["text"]="Riedquat = {}ly".format(stringFromNumber(round(getDistance(RIEDQUAT,(x,y,z)),0),0))	
-	
+	if this.merope.get() != "1":
+		this.zurara.grid()
+		this.zurara["text"]="Zurara = {}ly".format(stringFromNumber(round(getDistance(ZURARA,(x,y,z)),0),0))
+		this.reorte.grid()
+		
+		dr=getDistance(REORTE,(x,y,z))
+		dq=getDistance(RIEDQUAT,(x,y,z))
+		
+		if dr > dq:
+			this.reorte["text"]="Reorte = {}ly".format(stringFromNumber(round(getDistance(REORTE,(x,y,z)),0),0))	
+		else:	
+			this.reorte["text"]="Riedquat = {}ly".format(stringFromNumber(round(getDistance(RIEDQUAT,(x,y,z)),0),0))	
+		
+		#this.reidquat.grid()
+		#this.reidquat["text"]="Riedquat = {}ly".format(stringFromNumber(round(getDistance(RIEDQUAT,(x,y,z)),0),0))	
+		
 	this.ship.place(x=rx, y=ry)		
 	SphereSystems(nc,(x,y,z)).start()
 	Traffic(system).start()

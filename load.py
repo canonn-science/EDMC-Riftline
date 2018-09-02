@@ -339,34 +339,43 @@ def displayDistance(d):
 		sd=" > {}ly".format(range)
 	this.status["text"]="{} {}".format(location,sd)
 	
+	
+	
 def displayRift(system,x,y,z):
 	jd=getRiftDistance(x,y,z)
 	#nc = NearestCoordinates
 	nc=getNearest(x,y,z) 
 	
-	# We are going to translate the origin to nearest point in the line
-	# So we translate a know point in the same fashion 
-	tr=translate(RIEDQUAT,nc)
+	#in not merope then translate and rotate
+	if this.merope.get() != "1":
+		
+		
+		# We are going to translate the origin to nearest point in the line
+		# So we translate a know point in the same fashion 
+		tr=translate(RIEDQUAT,nc)
+		
+		#Next work out the angles needed to 
+		xz = math.atan2(tr[2],tr[0])
+		xy = math.atan2(tr[1],tr[0])
+		
+		cp = translate((x,y,z),nc)
+		
+		# then we translate one end of the line RIEDQUAT
+		tr=translate(RIEDQUAT,nc)
+		tq=translate(REORTE,nc)
+		# to put the line on the x axis first rotate 
+		# x to z then x to y
+		xz = math.atan2(tr[2],tr[0])
+		xy = math.atan2(tr[1],tr[0])
+		
+		#current position
+		cp = translate((x,y,z),nc)
 	
-	#Next work out the angles needed to 
-	xz = math.atan2(tr[2],tr[0])
-	xy = math.atan2(tr[1],tr[0])
-	
-	cp = translate((x,y,z),nc)
-	
-	# then we translate one end of the line RIEDQUAT
-	tr=translate(RIEDQUAT,nc)
-	tq=translate(REORTE,nc)
-	# to put the line on the x axis first rotate 
-	# x to z then x to y
-	xz = math.atan2(tr[2],tr[0])
-	xy = math.atan2(tr[1],tr[0])
-	
-	#current position
-	cp = translate((x,y,z),nc)
-	
-	# get on screen coordinates for cp
-	rx,ry=getRadialCoords(rotate(cp,xz,xy),getDistance((0,0,0),rotate(cp,xz,xy)))
+		# get on screen coordinates for cp
+		
+		rx,ry=getRadialCoords(rotate(cp,xz,xy),getDistance((0,0,0),rotate(cp,xz,xy)))
+	else:
+		rx,ry=getRadialCoords((x,y,z),getDistance(MEROPE,(x,y,z)))
 	
 	this.dsol.grid()
 	this.dsol["text"]="Sol = {}ly".format(stringFromNumber(round(getDistance(SOL,(x,y,z)),0),0))

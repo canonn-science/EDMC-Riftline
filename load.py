@@ -77,13 +77,17 @@ class SphereSystems(threading.Thread):
 	def getDensity(self,c,radius,systems):	
 		x,y,z=c
 		#using Sol as the reference density to 100%
+		# There are 8260 systems within 100 ly of Sol
 		DSOL=8260
+		# calculate the volume of 100ly 
 		VSOL=(4/3)*math.pi*pow(100,3)
 		
 		#get the sample volume and get a scale factor
 		v=(4/3)*math.pi*pow(radius,3)
 		scale=VSOL/v
+		
 		print "scale {}".format(scale)		
+		
 		denom=DSOL/scale
 		print "Denonimator {}".format(denom)	
 		print "round(({}/{})*100,1)".format(systems,denom)

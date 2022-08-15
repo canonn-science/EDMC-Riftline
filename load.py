@@ -11,8 +11,9 @@ import l10n
 from config import config
 from l10n import Locale
 import myNotebook as nb
-import Tkinter as tk
-from urllib import quote_plus
+import tkinter as tk
+from urllib.parse import quote_plus
+from urllib.parse import unquote
 
 this = sys.modules[__name__]
 locale.setlocale(locale.LC_ALL, '')
@@ -39,11 +40,9 @@ class CmdrData(threading.Thread):
 			
 			r=requests.get(url)
 			s =  r.json()
-			#print s
+			
 			displayRift(self.system,float(s["coords"]["x"]),float(s["coords"]["y"]),float(s["coords"]["z"]))
-			#debug(self.payload,2)
-		#except:
-		#	print("[RiftLine] Issue posting message " + str(sys.exc_info()[0]))
+			
 
 class Traffic(threading.Thread):
 	def __init__(self, system):
@@ -58,7 +57,7 @@ class Traffic(threading.Thread):
 			s =  r.json()
 			this.traffic.grid()
 			this.traffic["text"]="Traffic: {} ships".format(stringFromNumber(s["traffic"]["total"],0))	
-			#print s
+			
 			
 		
 class SphereSystems(threading.Thread):
@@ -85,12 +84,9 @@ class SphereSystems(threading.Thread):
 		#get the sample volume and get a scale factor
 		v=(4/3)*math.pi*pow(radius,3)
 		scale=VSOL/v
-		
-		print "scale {}".format(scale)		
+
 		
 		denom=DSOL/scale
-		print "Denonimator {}".format(denom)	
-		print "round(({}/{})*100,1)".format(systems,denom)
 		
 		return round((systems/denom)*100,0)
 		
@@ -123,11 +119,7 @@ class SphereSystems(threading.Thread):
 			this.denlocal.grid()
 			this.denlocal["text"] = "Density {}% ({}%)".format(stringFromNumber(dl,0),stringFromNumber(da,0))
 		
-			#this.denlocal.grid()
-			#this.denarea.grid()
-			#debug(self.payload,2)
-		#except:
-		#	print("[RiftLine] Issue posting message " + str(sys.exc_info()[0]))		
+			
 		
 def dot(a, b):
 	return sum([a[i]*b[i] for i in range(3)])
@@ -183,7 +175,7 @@ def translate(c,t):
 	# if c and t are the same then returns 0,0,0
 	return tuple([c[i]-t[i] for i in range(3)])
 
-def plugin_start(plugin_dir):
+def plugin_start3(plugin_dir):
 	"""
 	Start this plugin
 	:return: Plugin name
@@ -199,14 +191,14 @@ def plugin_prefs(parent, cmdr, is_beta):
 	this.merope = tk.StringVar(value=config.get("Merope Shell"))	# Retrieve saved value from config
 	frame = nb.Frame(parent)
 	nb.Checkbutton(frame, text="Use Merope Shell  Instead of Rift", variable=this.merope).grid()
-	print "prefs"
+	
 	return frame	
 
 def prefs_changed(cmdr, is_beta):
 	"""
 	Save settings.
 	"""
-	print "Setting pref {}".format(this.merope.get())
+	
 	config.set("Merope Shell", this.merope.get())	
 
 	

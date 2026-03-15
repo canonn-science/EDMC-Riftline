@@ -1,5 +1,6 @@
 
-load.pyo
-Circle1.jpg
-Circle1.png
-__pycache__/load.cpython-310.opt-2.pyc
+# Python compiled files
+__pycache__/
+*.py[cod]
+*.pyo
+

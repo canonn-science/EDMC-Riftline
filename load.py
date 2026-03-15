@@ -215,7 +215,7 @@ def plugin_app(parent):
     this.pcont=tk.Frame(parent)
     this.container=tk.Frame(this.pcont)
     this.container.columnconfigure(3, weight=1)
-    imagepath=this.plugin_dir+'\\images\\{}'
+    imagepath=str(this.plugin_dir)+'\\images\\{}'
       
     this.RADAR_PANEL = tk.PhotoImage(file = imagepath.format("circle_panel.gif"))
     this.RADAR_SCREEN = tk.PhotoImage(file = imagepath.format("radar_panel.gif"))

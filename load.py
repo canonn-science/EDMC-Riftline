@@ -26,7 +26,7 @@ MEROPE=(-78.59375,-149.625,-340.53125)
 RADAR_CENTER=(75,75)
 
 def stringFromNumber(a,b):
-	return Locale.stringFromNumber(a,b)
+	return Locale.string_from_number(a,b)
 
 class CmdrData(threading.Thread):
 	def __init__(self, system):
@@ -34,14 +34,13 @@ class CmdrData(threading.Thread):
 		self.system = system
 
 	def run(self):
-		#try:
-			
+		try:
 			url="https://www.edsm.net/api-v1/system?showCoordinates=1&systemName="+quote_plus(self.system)
-			
-			r=requests.get(url)
-			s =  r.json()
-			
+			r=requests.get(url, timeout=10)
+			s = r.json()
 			displayRift(self.system,float(s["coords"]["x"]),float(s["coords"]["y"]),float(s["coords"]["z"]))
+		except Exception:
+			pass
 			
 
 class Traffic(threading.Thread):
@@ -50,13 +49,14 @@ class Traffic(threading.Thread):
 		self.system = system
 
 	def run(self):
-		#try:
-			
+		try:
 			url="https://www.edsm.net/api-system-v1/traffic?systemName="+quote_plus(self.system)
-			r=requests.get(url)
-			s =  r.json()
+			r=requests.get(url, timeout=10)
+			s = r.json()
 			this.traffic.grid()
-			this.traffic["text"]="Traffic: {} ships".format(stringFromNumber(s["traffic"]["total"],0))	
+			this.traffic["text"]="Traffic: {} ships".format(stringFromNumber(s["traffic"]["total"],0))
+		except Exception:
+			pass	
 			
 			
 		
@@ -69,9 +69,8 @@ class SphereSystems(threading.Thread):
 	def getList(self,c,radius):
 		x,y,z=c
 		url="https://www.edsm.net/api-v1/sphere-systems?showCoordinates=1&minRadius=0&radius={}&x={}&y={}&z={}"
-		r=requests.get(url.format(radius,x,y,z))
-		s =  r.json()
-		return s
+		r=requests.get(url.format(radius,x,y,z), timeout=30)
+		return r.json()
 		
 	def getDensity(self,c,radius,systems):	
 		x,y,z=c
@@ -91,17 +90,15 @@ class SphereSystems(threading.Thread):
 		return round((systems/denom)*100,0)
 		
 	def run(self):
-		#try:
-		
+		try:
 			# get a list of systems only if not Merope
 			if this.merope.get() != "1":
 				systems=self.getList(self.centre,100)
-				
 			
 			# we might not be in range of the centre so need to make an extra call
 			# could optimise this by checking distance.
-			local=len(self.getList(self.system,20))		
-					
+			local=len(self.getList(self.system,20))
+			
 			# after grabbing the list of sites we need to rotate and translate them
 			# then find the closest site to the nc with a positive x and negative x
 			# if they can be found then put them on the map if we wanted but at over 800 systems that would be naughty
@@ -115,9 +112,10 @@ class SphereSystems(threading.Thread):
 			
 			dl=self.getDensity(self.system,20,local)-100
 			
-
 			this.denlocal.grid()
 			this.denlocal["text"] = "Density {}% ({}%)".format(stringFromNumber(dl,0),stringFromNumber(da,0))
+		except Exception:
+			pass
 		
 			
 		
@@ -404,5 +402,5 @@ def journal_entry(cmdr, is_beta, system, station, entry, state):
 	if entry['event'] in ['StartUp', 'Location', 'FSDJump']:
 		displayRift(system,float(entry["StarPos"][0]),float(entry["StarPos"][1]),float(entry["StarPos"][2]))
 
-def cmdr_data(data):
+def cmdr_data(data, is_beta):
 	CmdrData(data["lastSystem"]["name"]).start()
